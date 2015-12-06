@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "name": "fxos-vr-q3",
+  "description": "Quake 3 mobile WebVR-experience",
+  "launch_path": "/index.html",
+  "icons": {
+    "16": "/images/icon.png",
+    "32": "/images/icon.png",
+    "48": "/images/icon.png",
+    "60": "/images/icon.png",
+    "64": "/images/icon.png",
+    "90": "/images/icon.png",
+    "128": "/images/icon.png",
+    "256": "/images/icon.png",
+    "512": "/images/icon.png"
+  },
+  "developer": {
+    "name": "Flaki",
+    "url": "https://twitter.com/slsoftworks"
+  },
+  "type": "certified",
+  "permissions": {
+    "wifi-manage": {
+      "description": "show current ip etc"
+    },
+  "tcp-socket": {},
+    "udp-socket": {},
+  "nfc": {}
+  },
+  "installs_allowed_from": [
+    "*"
+  ]
+}

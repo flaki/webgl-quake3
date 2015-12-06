@@ -60,8 +60,8 @@ var cameraPosition = [0, 0, 0];
 var onResize = null;
 
 // VR Globals
-var vrEnabled = false;
-var vrForced = false;
+var vrEnabled = true;
+var vrForced = true;
 var vrHMD = null;
 var vrSensor = null;
 var vrTimewarp = true;
@@ -75,7 +75,7 @@ var vrFovLeft = null;
 var vrFovRight = null;
 var vrPosition = null;
 
-var vrDrawMode = 0;
+var vrDrawMode = 1;
 
 var SKIP_FRAMES = 0;
 var REPEAT_FRAMES = 1;
@@ -309,7 +309,7 @@ function drawFrame(gl) {
       leftViewport.width = canvas.width / 2.0;
       leftViewport.height = canvas.height;
 
-      rightViewport.x = canvas.width / 2.0; 
+      rightViewport.x = canvas.width / 2.0;
       rightViewport.width = canvas.width / 2.0;
       rightViewport.height = canvas.height;
 
