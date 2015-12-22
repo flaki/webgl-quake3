@@ -75,6 +75,10 @@ var vrFovLeft = null;
 var vrFovRight = null;
 var vrPosition = null;
 
+// Polyfill for crappy PositionSensorVRDevice perf on FxOS
+var vrMotionSensor = null;
+var vrMotionSensorPosition = null;
+
 var vrDrawMode = 1;
 
 var SKIP_FRAMES = 0;
@@ -431,7 +435,9 @@ function updateInput(frameTime) {
     }
 
     if (vrEnabled && vrSensor) {
-      vrPosition = vrSensor.getState();
+      //vrPosition = vrSensor.getState();
+      vrPosition = vrSensor.getImmediateState();
+      //DISABLE//vrPosition = vrMotionSensorPosition = vrMotionSensor.getState();
     }
 
     moveViewOriented(dir, frameTime);
@@ -466,9 +472,10 @@ function initEvents() {
             respawnPlayer(-1);
         }
         if(event.charCode == 'C'.charCodeAt(0) || event.charCode == 'c'.charCodeAt(0)) {
-            if (vrSensor && "zeroSensor" in vrSensor) {
-              vrSensor.zeroSensor();
+            if (vrSensor && "resetSensor" in vrSensor) {
+              vrSensor.resetSensor(); // new API
             }
+            vrMotionSensor.resetSensor();
         }
         if(event.charCode == 'T'.charCodeAt(0) || event.charCode == 't'.charCodeAt(0)) {
             if (vrHMD && "setTimewarp" in vrHMD) {
@@ -661,7 +668,7 @@ function main() {
         } else {
           var devicePixelRatio = window.devicePixelRatio || 1;
 
-          if(document.fullscreenElement) {
+          if (isFullscreen()) {
               canvas.width = screen.width * devicePixelRatio;
               canvas.height = screen.height * devicePixelRatio;
           } else {
@@ -741,6 +748,44 @@ function main() {
             var mobileVrBtn = document.getElementById("mobileVrBtn");
             mobileVrBtn.style.display = "block";
         }
+
+        vrMotionSensor = (function() {
+          var p = {
+            timestamp: 0,
+            hasPosition: false,
+            position: null,
+            linearVelocity: 0,
+            linearAcceleration: 0,
+            hasOrientation: true,
+            orientation: { x:0, y:0, z:0, w:1 }, //new DOMPoint(0,0,0, 1),
+            angularVelocity: 0,
+            angularAcceleration: 0
+          };
+
+          function getState() {
+            return p;
+          }
+          function resetSensor() {
+            p.x = p.y = p.z = 0;
+          }
+
+          function update(event) {
+            //p.orientation = new DOMPoint(x,y,z, 1);
+            p.orientation.x += 0;
+            p.orientation.y += Math.PI/4 * event.rotationRate.alpha/180;
+            p.orientation.z += 0;
+//            console.log(Math.floor(event.rotationRate.alpha));
+//            console.log(Math.floor(event.rotationRate.beta));
+//            console.log(Math.floor(event.rotationRate.gamma));
+          }
+
+          //DISABLE//window.addEventListener("devicemotion", update, true);
+
+          return {
+            resetSensor: resetSensor,
+            getState: getState
+          }
+        })();
     }
 
     if (navigator.getVRDevices) {
@@ -760,10 +805,23 @@ function main() {
     var viewportFrame = document.getElementById("viewport-frame");
     var viewport = document.getElementById("viewport");
     document.addEventListener("fullscreenchange", function() {
-        if(document.fullscreenElement) {
+          var lock;
+
+          if(isFullscreen()) {
             viewport.requestPointerLock(); // Attempt to lock the mouse automatically on fullscreen
+
+            // try locking screen in landscape orientation
+            if ("lockOrientation" in window.screen) {
+
+            } else if ("mozLockOrientation" in window.screen) {
+              lock = window.screen.mozLockOrientation("landscape");
+              console.log("Orientation "+(lock ? 'locked' : 'not locked'), lock);
+            } else {
+              console.log("Orientation lock unavailable!");
+            }
         } else {
           vrEnabled = false;
+          console.log("VR switch failed!");
         }
         onResize();
     }, false);
@@ -781,6 +839,7 @@ function main() {
     function goVrFullscreen() {
         vrEnabled = true;
         xAngle = 0.0;
+        console.log(vrHMD);
         viewport.requestFullScreen({ vrDisplay: vrHMD });
     }
     var vrBtn = document.getElementById("vrBtn");
@@ -788,5 +847,23 @@ function main() {
     vrBtn.addEventListener("click", goVrFullscreen, false);
     mobileVrBtn.addEventListener("click", goVrFullscreen, false);
 
+    // Exit fullscreen
+    function exitFullscreen() {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+    document.getElementById("viewport").addEventListener("dblclick", exitFullscreen, false);
 }
 window.addEventListener("load", main); // Fire this once the page is loaded up
+
+function isFullscreen() {
+  return (('fullscreenElement' in document && document.fullscreenElement !== null) || // standard methods
+    document.mozFullScreen || document.webkitIsFullScreen);                    // Mozilla/FirefoxOS/legacy methods
+}

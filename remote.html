@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Q3 Remote</title>
+  <style>
+    body {
+      background-color: purple;
+      color: white;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      position: absolute;
+      top: 0px; left: 0px; right: 0px; bottom: 0px;
+      width: 100%; height: 100%;
+    }
+    #respawn {
+      padding: 5px;
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="touch"></canvas>
+  <span>REMOTE CONNECTED TO <ip/></span>
+  <button id="respawn">R</button>
+  <script>
+    var VGP = {
+      buttons: [
+        { pressed: 0 },
+        { pressed: 0 },
+        { pressed: 0 },
+        { pressed: 0 }
+      ],
+      axes: [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+      initClient();
+    });
+
+    function initClient() {
+    	var connection = new WebSocket("ws://"+window.location.host+":8080");
+
+  		connection.onopen = function () {
+  			print("Connected");
+
+    		connection.onclose = function () {
+    			print("Connection closed")
+    		}
+    		connection.onerror = function () {
+    			console.error("Connection error")
+    		}
+    	}
+
+      initRemote(connection);
+    }
+
+    function initRemote(connection) {
+      document.body.onclick = function() {
+        VGP.buttons[0].pressed = 1;
+        setTimeout(function() {
+          VGP.buttons[0].pressed = 0;
+        },100);
+      };
+      document.getElementById("respawn").onclick = function() {
+        connection.send("RESPAWN");
+      }
+
+      var touchpad = document.getElementById("touch");
+        touchpad.width = document.body.clientWidth;
+        touchpad.height = document.body.clientHeight;
+
+      var tx,ty;
+      var aS = document.body.clientWidth / 6; // axis scale
+      touchpad.addEventListener("touchstart", function(e) {
+        tx = e.touches[0].clientX;
+        ty = e.touches[0].clientY;
+      });
+      touchpad.addEventListener("touchend", function(e) {
+        VGP.axes[0] = VGP.axes[1] = 0;
+      });
+
+      touchpad.addEventListener("touchmove", function(e) {
+        VGP.axes[0] = Math.min(1, Math.max(-1, (e.touches[0].clientX-tx)/aS)).toFixed(2)*1.0;
+        VGP.axes[1] = Math.min(1, Math.max(-1, (e.touches[0].clientY-ty)/aS)).toFixed(2)*1.0;
+      });
+
+      var lastVGP;
+      setInterval(function() {
+        var json = JSON.stringify(VGP)
+        if (lastVGP && lastVGP === json) {
+          // do not send if unchanged
+          return;
+        }
+
+        connection.send(json);
+        lastVGP = json;
+      }, 120);
+
+      connection.onmessage = function (event) {
+        print("> " + event.data);
+      }
+    }
+
+    function print(msg) {
+      var div = document.createElement("div");
+      div.textContent = msg;
+      document.body.appendChild(div);
+    }
+  </script>
+</body>
+</html>

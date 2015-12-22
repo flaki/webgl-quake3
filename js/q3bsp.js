@@ -49,11 +49,11 @@ q3bsp = function(gl) {
     // Spawn the web worker
     this.worker = new Worker('/js/q3bsp_worker.js');
     this.worker.onmessage = function(msg) {
-        console.log(msg);
+        //console.log(msg);
         map.onMessage(msg);
     };
     this.worker.onerror = function(msg) {
-        console.log(msg);
+        //console.log(msg);
         console.error('Line: ' + msg.lineno + ', ' + msg.message);
     };
 

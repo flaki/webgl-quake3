@@ -120,13 +120,15 @@ canvas {
 #mobileVrBtn {
     position: absolute;
     bottom: 1em;
-    right: 4em;
+    right: 5em;
+    width: 3em;
 }
 
 #mobileFullscreenBtn {
     position: absolute;
     bottom: 1em;
     right: 1em;
+    width: 3em;
 }
 
 /* Smaller than standard 960 (devices and browsers) */
