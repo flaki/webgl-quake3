@@ -852,7 +852,11 @@ module.exports = function() {
   	console.log("Creating webserver on ",ip,":",PORT);
     webserver = net.createServer().listen(PORT);
 
-    initSocketServer();
+    // Init remote control socket
+    initSocketServer(ip);
+
+    // Init nfc url sharer
+    initNFC(ip);
 
     webserver.on("connection", function(socket) {
       console.log("New Web UI connection...");
@@ -885,7 +889,7 @@ module.exports = function() {
     });
   }
 
-  function initSocketServer() {
+  function initSocketServer(ip) {
     socketserver = ws.createServer(function (connection) {
       console.log("Controller connected on port ", WS_PORT);
 
@@ -934,6 +938,48 @@ module.exports = function() {
     };
     navigator.getGamepads._getGamepads = ggp;
   }
+
+  function initNFC(ip) {
+    var mozNfc = window.navigator.mozNfc;// TODO change var name
+
+    // TODO: if "access": "readwrite" is in the nfc permissions field we...
+    // don't have access to the API! which makes no sense?
+    if(!mozNfc) {
+      console.error('NFC API not available');
+    } else {
+      console.log('NFC available');
+    }
+
+    if(!mozNfc.enabled) {
+      console.log('NFC is available, but not enabled');
+    }
+
+    mozNfc.onpeerfound = function(e) {
+      console.log('NFC PEER!!!', e.peer);
+
+      var peer = e.peer;
+      var url = 'http://' + ip;
+      var ndefHelper = new NDEFHelper();
+      var record = ndefHelper.createURI(url);
+
+      peer.sendNDEF([record]).then(function () {
+        console.log('SENT URL ' + url);
+      }).catch(function (err) {
+        console.error('NFC ERROR: ', err);
+      });
+    }
+
+
+    window.addEventListener('beforeunload', function() {
+      console.log('STOPPING NFC SERVER');
+      shutdownNFC();
+    });
+  }
+
+  function shutdownNFC() {
+    window.navigator.mozNfc.onpeerfound = null;
+  }
+
 
   getIP();
 }
